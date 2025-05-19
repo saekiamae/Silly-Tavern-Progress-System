@@ -59,7 +59,17 @@ PS.process = (idx, parse, updateModifiers) => {
         for (let psm of psl) localContextList.push(PS.exec(psm, state));
         if (cid >= start){
             //parse message for <{json clauses}>
-            if (parse) msg.mes = PS.processTextForJS(msg.mes, localContextList, cid, state);
+            if (parse) {
+                msg.mes = PS.processTextForJS(msg.mes, localContextList, cid, state);
+                //Update UI Text
+                const $chat = $('#chat');
+                const $mes = $chat.find(`[mesid="${cid}"]`);
+                if ($mes.length > 0){
+                    const $mtex = $mes.find('.mes_text');
+                    $mtex.empty();
+                    $mtex.html(ctx.messageFormatting(msg.mes));
+                }
+            }
             if (updateModifiers) PS.updateModifiers(cid, localContextList, idx !== -2);
         }
     }
