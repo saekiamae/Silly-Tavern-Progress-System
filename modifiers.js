@@ -160,7 +160,7 @@ function _createElementDiv(itemData, mainDiv, elementsContainer, chatIdx, onRemo
 }
 
 
-function createCollapsibleListContainer(chatIdx, backendReorderCallback) {
+function createCollapsibleListContainer(chatIdx, backendReorderCallback, isInitiallyExpanded) {
 
     const mainDiv = $('<div class="stv-elements-main"></div>').css({
         'width': '100%',
@@ -191,22 +191,31 @@ function createCollapsibleListContainer(chatIdx, backendReorderCallback) {
         'min-height': '10px'
     });
 
-    let isExpanded = false;
-    elementsContainer.hide();
-    stvBarIcon.text('►');
+    // Set initial state using jQuery's .data() method
+    mainDiv.data('isExpanded', !!isInitiallyExpanded); // Ensure it's a boolean
+
+    if (mainDiv.data('isExpanded')) {
+        elementsContainer.show();
+        stvBarIcon.text('▼');
+    } else {
+        elementsContainer.hide();
+        stvBarIcon.text('►');
+    }
 
     stvBar.on('click', function() {
-        // Prevent slide if sortable is active (dragging)
         if (elementsContainer.hasClass('sorting-active')) {
-            return; // Do nothing if a drag is in progress
+            return;
         }
-        isExpanded = !isExpanded;
-        if (isExpanded) {
+        // Toggle the state using .data()
+        const currentIsExpanded = mainDiv.data('isExpanded');
+        mainDiv.data('isExpanded', !currentIsExpanded);
+
+        if (mainDiv.data('isExpanded')) {
             elementsContainer.slideDown(200);
         } else {
             elementsContainer.slideUp(200);
         }
-        stvBarIcon.text(isExpanded ? '▼' : '►');
+        stvBarIcon.text(mainDiv.data('isExpanded') ? '▼' : '►');
     });
 
     mainDiv.append(stvBar).append(elementsContainer);
@@ -219,7 +228,7 @@ function createCollapsibleListContainer(chatIdx, backendReorderCallback) {
             tolerance: 'pointer',
             revert: 150,
             start: function(event, ui) {
-                elementsContainer.addClass('sorting-active'); // Add flag class
+                elementsContainer.addClass('sorting-active');
                 ui.item.css({
                     'box-shadow': '0 4px 8px rgba(0,0,0,0.2)',
                     'opacity': '0.85'
@@ -231,26 +240,23 @@ function createCollapsibleListContainer(chatIdx, backendReorderCallback) {
                     'border': '1px dashed #99ccff',
                     'border-radius': ui.item.css('border-radius') || '5px',
                     'visibility': 'visible',
-                    'box-sizing': 'border-box' // Added for consistency
+                    'box-sizing': 'border-box'
                 });
-                // Change cursor on the helper's (dragged item's) handle
                 ui.helper.find('.stv-drag-handle').css('cursor', 'grabbing');
                 ui.item.data('fromIndex', ui.item.index());
             },
             stop: function(event, ui) {
-                elementsContainer.removeClass('sorting-active'); // Remove flag class
+                elementsContainer.removeClass('sorting-active');
                 ui.item.css({
                     'box-shadow': '0 1px 2px rgba(0,0,0,0.08)',
                     'opacity': '1'
                 });
-                // Reset cursor on the item's handle
                 ui.item.find('.stv-drag-handle').css('cursor', 'grab');
             },
             update: function(event, ui) {
                 const movedItemElement = ui.item;
                 const fromIndex = movedItemElement.data('fromIndex');
                 const newIndex = movedItemElement.index();
-                const movedItemData = movedItemElement.data('itemData');
 
                 if (typeof backendReorderCallback === 'function') {
                     backendReorderCallback(chatIdx, fromIndex, newIndex);
@@ -265,7 +271,7 @@ function createCollapsibleListContainer(chatIdx, backendReorderCallback) {
 
 
 
-PS.updateModifiers = (idx, localContextList) => {
+PS.updateModifiers = (idx, localContextList, expand) => {
     //ensure correct elements path on the site and clear the container
     const $chat = $('#chat');
     const $mes = $chat.find(`[mesid="${idx}"]`);
@@ -274,8 +280,14 @@ PS.updateModifiers = (idx, localContextList) => {
     let $STVMain = $mblock.find('.stv-elements-main');
     if($STVMain.length === 0){
         const $mtex = $mblock.find('.mes_text');
-        const newMainHTML = createCollapsibleListContainer(idx, PS.modifierReorderCallback);
+        const newMainHTML = createCollapsibleListContainer(idx, PS.modifierReorderCallback, expand);
         $STVMain = $(newMainHTML).insertAfter($mtex);
+    }
+    else {
+        const theSameContainerLater = $STVMain.first();
+        const isItExpanded = theSameContainerLater.data('isExpanded');
+        theSameContainerLater.data('isExpanded', !expand);
+        theSameContainerLater.children().first().trigger('click');
     }
     const $elementsContainer = $STVMain.find('.stv-elements-container');
     $elementsContainer.empty();
