@@ -1,0 +1,20 @@
+{
+  "display_name": "Silly Tavern Progress System",
+  "loading_order": 90,
+  "requires": [],
+  "optional": [],
+  "version": "1.0.0",
+  "description": "Manages and displays chat variables with a floating window, configurable via chat commands.",
+  "author": "SaekiAmae",
+  "id": "stvs",
+  "tags": ["variables", "utility", "chat"],
+  "js": "main.js",
+  "settings": [
+    {
+      "id": "variablesData",
+      "name": "Variables Data",
+      "type": "TEXT",
+      "default_value": "{}"
+    }
+  ]
+}
