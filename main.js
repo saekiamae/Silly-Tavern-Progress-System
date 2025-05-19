@@ -60,7 +60,7 @@ PS.process = (idx, parse, updateModifiers) => {
         if (cid >= start){
             //parse message for <{json clauses}>
             if (parse) msg.mes = PS.processTextForJS(msg.mes, localContextList, cid, state);
-            if (updateModifiers) PS.updateModifiers(idx, localContextList);
+            if (updateModifiers) PS.updateModifiers(cid, localContextList);
         }
     }
 

@@ -269,12 +269,13 @@ PS.updateModifiers = (idx, localContextList) => {
     //ensure correct elements path on the site and clear the container
     const $chat = $('#chat');
     const $mes = $chat.find(`[mesid="${idx}"]`);
-    if (!$mes) return;
+    if ($mes.length === 0) return;
     const $mblock = $mes.find('.mes_block');
     let $STVMain = $mblock.find('.stv-elements-main');
     if($STVMain.length === 0){
         const $mtex = $mblock.find('.mes_text');
-        $STVMain = $mtex.after(createCollapsibleListContainer(idx, PS.modifierReorderCallback)).next();
+        const newMainHTML = createCollapsibleListContainer(idx, PS.modifierReorderCallback);
+        $STVMain = $(newMainHTML).insertAfter($mtex);
     }
     const $elementsContainer = $STVMain.find('.stv-elements-container');
     $elementsContainer.empty();
@@ -284,7 +285,6 @@ PS.updateModifiers = (idx, localContextList) => {
         $elementsContainer.append(el);
     }
     $elementsContainer.sortable('refresh');
-
     _updateMainVisibility($STVMain, $elementsContainer);
 }
 
