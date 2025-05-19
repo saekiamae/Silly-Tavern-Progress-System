@@ -111,7 +111,26 @@ class UnsafeSandbox {
 PS.exec = (psm, globalScope = {}) => {
     const localScope = {
         PSM: {
-
+            stext: function(value) {
+                this.text = value;
+                return this;
+            },
+            sreason: function(value) {
+                this.reason = value;
+                return this;
+            },
+            sbcolor: function(value) {
+                this.bcolor = value;
+                return this;
+            },
+            stcolor: function(value) {
+                this.tcolor = value;
+                return this;
+            },
+            sfont: function(value) {
+                this.font = value;
+                return this;
+            }
         },
         PSO: (name = '') => {
             return {
@@ -148,8 +167,16 @@ PS.exec = (psm, globalScope = {}) => {
                     this.min = value;
                     return this;
                 },
+                sname: function(value) {
+                    this.name = value;
+                    return this;
+                },
                 smax: function(value) {
                     this.max = value;
+                    return this;
+                },
+                sval: function(newValue) {
+                    this.val = newValue;
                     return this;
                 },
                 set: function(newValue) {

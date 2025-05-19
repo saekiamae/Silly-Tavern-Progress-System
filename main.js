@@ -39,14 +39,13 @@ PS.process = (idx, parse, updateModifiers) => {
         start = 0;
         end = ctx.chat.length;
     }
-
     //global updatable state, shared between all ps modifiers
     const state = {};
 
     // main processing
     for (let cid = 0; cid < end; cid++) {
         //grab current msg object from our chat and get list of ps modifiers.
-        const msg = ctx.chat.at(idx);
+        const msg = ctx.chat.at(cid);
         if (!msg) continue; //Shouldn't happen
         if (!msg.hasOwnProperty('PS')) msg.PS = [];
         let swipeID = 0;
@@ -102,6 +101,7 @@ jQuery(() => {
         context.eventSource.on(context.event_types.CHAT_CHANGED, (cid) => {
             //console.log('CHAT_CHANGED event triggered. Data:', cid);
             $(`#${PS.winContainer}`).empty(); // just for safety
+            $(`#${PS.editContainer}`).empty(); // just for safety
             PS.process(-2, true, true);
         });
 
@@ -136,7 +136,8 @@ jQuery(() => {
         });
         */
         context.registerMacro('PSAll', () => {
-            const state = PS.state(-1);
+            //const state = PS.state(-1);
+            const state = PS.current.state;
             return JSON.stringify(state);
         });
 
