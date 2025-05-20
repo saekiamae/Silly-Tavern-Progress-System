@@ -73,7 +73,6 @@ PS.updateMessageUI = (msg, cid, contextDict) =>{
     const $mes = $chat.find(`[mesid="${cid}"]`);
     if ($mes.length > 0) {
         const $mtex = $mes.find('.mes_text');
-        console.log(contextDict)
         const newMsg = PS.preProcessMessage(msg.mes, cid, contextDict);
         $mtex.html(SillyTavern.getContext().messageFormatting(newMsg, msg.name, msg.is_system, msg.is_user, cid, PS.customSanitizerOverrides));
         PS.postProcessMessage($mtex, cid, contextDict);

@@ -118,12 +118,12 @@ jQuery(() => {
             //console.log('MESSAGE_RECEIVED event triggered. Message:', idx);
             PS.process(idx, true, true);
         });
-
+        /*
         context.eventSource.on(context.event_types.MESSAGE_EDITED, (idx) => {
             //console.log('MESSAGE_EDITED event triggered. Data:', idx);
             PS.process(idx, true, true);
         });
-
+        */
         context.eventSource.on(context.event_types.MESSAGE_SWIPED, (idx) => {
             //console.log('MESSAGE_SWIPED event triggered. Data:', idx);
             PS.process(idx, true, true);
@@ -133,12 +133,12 @@ jQuery(() => {
             //console.log('MESSAGE_DELETED event triggered. Data:', idx);
             PS.process(idx, false);
         });
-        /*
+
         context.eventSource.on(context.event_types.MESSAGE_UPDATED, (idx) => {
-            console.log('MESSAGE_UPDATED event triggered. Data:', idx);
-            PS.process(idx, true);
+            //console.log('MESSAGE_UPDATED event triggered. Data:', idx);
+            PS.process(idx, true, true);
         });
-        */
+
         context.registerMacro('PSAll', () => {
             //const state = PS.state(-1);
             const state = PS.current.state;
