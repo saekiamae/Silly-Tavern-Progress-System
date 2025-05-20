@@ -1,29 +1,12 @@
 import './constants.js';
 import './utils.js';
 import './editor.js'
+import './text.js'
 import './backend.js';
 import './modifiers.js';
 import './window.js';
 
 const PS = SillyTavern.PS;
-
-
-
-PS.processTextForJS = (text, localContextList, idx=-1, globalScope={}) => {
-    if (typeof text !== 'string') {
-        console.error("Invalid argument: text must be a string");
-        return text; // Or throw an error
-    }
-
-    const regex = /<{([\s\S]*?)}>/g;
-
-    return text.replace(regex, (match, data) => {
-        const psm = PS.addChatPS(data, idx);
-        const localScope = PS.exec(psm, globalScope);
-        localContextList.push(localScope);
-        return PS.getString(localScope.output);
-    });
-}
 
 
 
@@ -42,6 +25,9 @@ PS.process = (idx, parse, updateModifiers) => {
     //global updatable state, shared between all ps modifiers
     const state = {};
 
+    //context dictionary, used for parsing text
+    const contextDict = {};
+
     // main processing
     for (let cid = 0; cid < end; cid++) {
         //grab current msg object from our chat and get list of ps modifiers.
@@ -57,20 +43,28 @@ PS.process = (idx, parse, updateModifiers) => {
 
         // run existing modifiers first
         for (let psm of psl) localContextList.push(PS.exec(psm, state));
+        let fixDict = true;
         if (cid >= start){
             //parse message for <{json clauses}>
             if (parse) {
                 msg.mes = PS.processTextForJS(msg.mes, localContextList, cid, state);
-                //Update UI Text
-                const $chat = $('#chat');
-                const $mes = $chat.find(`[mesid="${cid}"]`);
-                if ($mes.length > 0){
-                    const $mtex = $mes.find('.mes_text');
-                    $mtex.empty();
-                    $mtex.html(ctx.messageFormatting(msg.mes));
+                for (let local of localContextList){
+                    contextDict[local.PSM.ID] = local;
                 }
+                fixDict = false;
+                const newDict = {...contextDict};
+                // because original Silly Tavern overwrites messages, let's move it to the end of event queue
+                setTimeout(() => {
+                    PS.updateMessageUI(msg, cid, newDict);
+                }, 0);
             }
             if (updateModifiers) PS.updateModifiers(cid, localContextList, idx !== -2);
+        }
+        // update our dictionary if it wasn't done yet
+        if (fixDict) {
+            for (let local of localContextList){
+                contextDict[local.ID] = local;
+            }
         }
     }
 

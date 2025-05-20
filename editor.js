@@ -64,9 +64,9 @@ SillyTavern.PS.createEditableJSWindow = (parentElement, initialJS, onSaveCallbac
         const css = `
             .editable-js-window {
                 position: absolute;
-                top: 50px;
-                left: 50px;
-                width: 500px;
+                top: 50%;
+                left: 5%;
+                width: auto;
                 min-width: 250px; /* Minimum resizable width */
                 height: 400px;
                 min-height: 200px; /* Minimum resizable height */

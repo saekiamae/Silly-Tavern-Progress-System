@@ -111,6 +111,11 @@ class UnsafeSandbox {
 PS.exec = (psm, globalScope = {}) => {
     const localScope = {
         PSM: {
+            ID: psm.id ?? PS.generateRandomId(4),
+            sID: function(value) {
+                this.ID = value;
+                return this;
+            },
             stext: function(value) {
                 this.text = value;
                 return this;
@@ -233,6 +238,8 @@ PS.exec = (psm, globalScope = {}) => {
             output = '{ERROR}';
         }
     }
+    psm.id = localScope.PSM.ID;
+    localScope.psm_raw = psm;
     localScope.output = output;
     return localScope;
 }
@@ -324,21 +331,22 @@ PS.editRequestCallback = (chatIdx, idx) => {
         console.warn("Error in editRequest that shouldn't happen!");
         return;
     }
+    PS.editModifier(psm, chatIdx);
+}
+
+
+
+PS.editModifier = (psm, cid) => {
     const editSaveCallback = (newCode) => {
-        const psl = PS.getChatPS(false, chatIdx);
-        if (psl === null) return;
-        const psm = psl.at(idx);
-        if (!psm) console.warn("Error in editSave that shouldn't happen!");
-        else {
-            if (psm.code !== newCode){
-                psm.code = newCode;
-                SillyTavern.getContext().saveChat();
-                PS.process(chatIdx, false, true);
-            }
+        if (psm.code !== newCode){
+            psm.code = newCode;
+            SillyTavern.getContext().saveChat();
+            PS.process(cid, false, true);
         }
     }
     PS.createEditableJSWindow($(`#${PS.editContainer}`), psm.code, editSaveCallback);
 }
+
 
 
 PS.state = (chatIdx = -1, withOptions=false) => {
