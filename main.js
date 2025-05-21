@@ -10,23 +10,51 @@ const PS = SillyTavern.PS;
 
 
 
-PS.process = (idx, parse, updateModifiers) => {
+PS.simplifyState = (state, parent) => {
+    const dict = {};
+    Object.entries(state).forEach(([objID, obj]) => {
+        if (typeof obj === 'object' && obj.__PSTYPE__ === 'o') {
+            parent[objID] = {};
+            PS.simplifyState(obj, parent[objID]);
+            parent[objID]['__winOpened__'] = obj.opened;
+            if (obj.name && obj.Name !== '') parent[objID]['__label__'] = obj.name;
+        }
+        else if (typeof obj === 'object' && obj.__PSTYPE__ === 'v') {
+            parent[objID] = obj.val;
+        }
+    });
+}
+
+
+
+PS.fillProcessStructures = (contextList, contextDict, modsList)=>{
+    for (let local of contextList){
+        contextDict[local.PSM.ID] = local;
+        modsList.push({
+            ID: local.PSM.ID,
+            Output: local.output,
+            Title: local.PSM.text,
+            Reason: local.PSM.reason
+        });
+    }
+}
+
+
+
+PS.process = (idx, parseText, updateModifiers) => {
     const ctx = SillyTavern.getContext();
     let start = idx;
-    let end = idx + 1;
-    if (idx === -1){
-        start = ctx.chat.length - 1;
-        end = ctx.chat.length;
-    }
-    else if (idx === -2){
-        start = 0;
-        end = ctx.chat.length;
-    }
+    let end = ctx.chat.length;
+    if (idx === -1) start = ctx.chat.length - 1;
+    else if (idx === -2) start = 0;
     //global updatable state, shared between all ps modifiers
     const state = {};
 
     //context dictionary, used for parsing text
     const contextDict = {};
+
+    //list of modifiers used to inform AI about previous modifiers
+    const modifiersList = [];
 
     // main processing
     for (let cid = 0; cid < end; cid++) {
@@ -46,11 +74,9 @@ PS.process = (idx, parse, updateModifiers) => {
         let fixDict = true;
         if (cid >= start){
             //parse message for <{json clauses}>
-            if (parse) {
+            if (parseText) {
                 msg.mes = PS.processTextForJS(msg.mes, localContextList, cid, state);
-                for (let local of localContextList){
-                    contextDict[local.PSM.ID] = local;
-                }
+                PS.fillProcessStructures(localContextList, contextDict, modifiersList);
                 fixDict = false;
                 const newDict = {...contextDict};
                 // because original Silly Tavern overwrites messages, let's move it to the end of event queue
@@ -58,14 +84,10 @@ PS.process = (idx, parse, updateModifiers) => {
                     PS.updateMessageUI(msg, cid, newDict);
                 }, 0);
             }
-            if (updateModifiers) PS.updateModifiers(cid, localContextList, idx !== -2);
+            if (updateModifiers) PS.updateModifiers(cid, localContextList, false);
         }
         // update our dictionary if it wasn't done yet
-        if (fixDict) {
-            for (let local of localContextList){
-                contextDict[local.ID] = local;
-            }
-        }
+        if (fixDict) PS.fillProcessStructures(localContextList, contextDict, modifiersList);
     }
 
     for (let callback of PS.onStateUpdate) callback(state, start); //run custom callbacks
@@ -86,6 +108,7 @@ PS.process = (idx, parse, updateModifiers) => {
     PS.current.chatID = ctx.chat.length - 1;
     PS.current.state = state;
     PS.current.openedWindows = openedWindows;
+    PS.current.modifiers = modifiersList;
 }
 
 
@@ -139,7 +162,34 @@ jQuery(() => {
             PS.process(idx, true, true);
         });
 
-        context.registerMacro('PSAll', () => {
+        context.registerMacro('PSModifiers', () => {
+            //const state = PS.state(-1);
+            const modifiers = PS.current.modifiers;
+            //reduce the amount of used tokens
+            const nlist = [];
+            for (let modifier of modifiers) {
+                nlist.push([modifier.ID, modifier.Title, modifier.Reason, modifier.Output]);
+            }
+            return JSON.stringify(nlist);
+        });
+
+        context.registerMacro('PSModifiersFull', () => {
+            //const state = PS.state(-1);
+            const modifiers = PS.current.modifiers;
+            return JSON.stringify(modifiers);
+        });
+
+        context.registerMacro('PSGlobal', () => {
+            //const state = PS.state(-1);
+            const state = PS.current.state;
+
+            //reduce the amount of used tokens
+            const nDict = {};
+            PS.simplifyState(state, nDict);
+            return JSON.stringify(nDict);
+        });
+
+        context.registerMacro('PSGlobalFull', () => {
             //const state = PS.state(-1);
             const state = PS.current.state;
             return JSON.stringify(state);

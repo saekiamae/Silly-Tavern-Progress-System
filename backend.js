@@ -8,7 +8,8 @@ const PS = SillyTavern.PS;
 PS.current = {
     chatID: -1,
     openedWindows: {},
-    state: {}
+    state: {},
+    context: []
 };
 
 
@@ -112,6 +113,7 @@ PS.exec = (psm, globalScope = {}) => {
     const localScope = {
         PSM: {
             ID: psm.id ?? PS.generateRandomId(4),
+            bcolor: '#880088',
             sID: function(value) {
                 this.ID = value;
                 return this;
@@ -208,8 +210,12 @@ PS.exec = (psm, globalScope = {}) => {
                     return this.val;
                 }
             };
+        },
+        STS: (command) => {
+            return SillyTavern.getContext().executeSlashCommands(command);
         }
     };
+    if (PS.safe < 2) localScope.ST = PS.getSTObject();
     const code = psm.code;
     let output = '';
     if (PS.safe){
@@ -242,6 +248,48 @@ PS.exec = (psm, globalScope = {}) => {
     localScope.psm_raw = psm;
     localScope.output = output;
     return localScope;
+}
+
+
+
+PS.getSTObject = () => {
+    const ctx = SillyTavern.getContext();
+
+    const obj = {};
+
+    const commands = ctx.SlashCommandParser.commands;
+
+    for (const com of Object.values(commands)) {
+        function f (...args) {
+            return com.callback(f.args, ...args);
+        }
+        const kwargs = {};
+        for (let kwarg of com.namedArgumentList){
+            kwargs[kwarg.name] = kwarg.defaultValue;
+            const setter = (value) => {
+                kwargs[kwarg.name] = value;
+                return f;
+            }
+            try {
+                f[kwarg.name] = setter;
+            }
+            catch(err) {
+                if (err instanceof TypeError) {
+                    f['_' + kwarg.name] = kwarg;
+                }
+                else{
+                    console.error("Failed to generate slash command " + com.name + "for kwarg: " + kwarg.name);
+                }
+            }
+
+        }
+        f.args = kwargs;
+        obj[com.name] = f;
+    }
+
+    obj.S = (text) => ctx.executeSlashCommands(text);
+
+    return obj;
 }
 
 

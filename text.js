@@ -25,21 +25,21 @@ PS.preProcessMessage = (inputText, messageId, contextDict) => {
     let localButtonIndex = 0;
 
     return inputText.replace(regex, (match, data) => {
-        const psm = contextDict[data];
-        if (!psm) return match;
+        const context = contextDict[data];
+        if (!context) return match;
 
         const esdata = PS.escapeHTML(data); // Or JSON.stringify(data) if data is complex
         const buttonId = `custom-btn-msg${messageId}-idx${localButtonIndex++}`;
 
-        const bcolor = psm['bcolor'] ?? 'transparent';
-        const tcolor = psm['tcolor'] ?? 'white';
+        const bcolor = context.PSM['bcolor'] ?? 'transparent';
+        const tcolor = context.PSM['tcolor'] ?? 'white';
 
-        return `<button id="${buttonId}"
+        return context.output !== '' ? `<button id="${buttonId}"
                         class="action-button"
                         style="background-color: ${bcolor}; color: ${tcolor}; padding: 0 4px; border: none; border-radius: 3px; cursor: pointer;"
                         data-action-payload="${esdata}">
-                    ${PS.escapeHTML(psm.output)}
-                </button>`;
+                    ${PS.escapeHTML(context.output)}
+                </button>` : '';
     });
 }
 

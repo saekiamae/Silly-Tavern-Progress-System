@@ -6,6 +6,6 @@ SillyTavern.PS = {
     DEFAULT_PRIORITY: 100,
     DEFAULT_MIN_VALUE: 0,
     DEFAULT_MAX_VALUE: 100,
-    safe: true
+    safe: 1
 };
 
