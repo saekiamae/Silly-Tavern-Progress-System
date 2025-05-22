@@ -293,7 +293,7 @@ PS.updateModifiers = (idx, localContextList, expand) => {
     $elementsContainer.empty();
     //fill the container with proper modifiers
     for (let localContext of localContextList) {
-        const el = _createElementDiv(localContext.PSM, $STVMain, $elementsContainer, idx, PS.modifierRemoveCallback);
+        const el = _createElementDiv(localContext.PSM.args, $STVMain, $elementsContainer, idx, PS.modifierRemoveCallback);
         $elementsContainer.append(el);
     }
     $elementsContainer.sortable('refresh');

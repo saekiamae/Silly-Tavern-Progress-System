@@ -14,7 +14,7 @@ PS.processTextForJS = (text, localContextList, idx=-1, globalScope={}) => {
         const psm = PS.addChatPS(data, idx);
         const localScope = PS.exec(psm, globalScope);
         localContextList.push(localScope);
-        return `<&${localScope.PSM.ID}&>`;
+        return `<&${localScope.PSM.args.id}&>`;
     });
 }
 
@@ -31,8 +31,8 @@ PS.preProcessMessage = (inputText, messageId, contextDict) => {
         const esdata = PS.escapeHTML(data); // Or JSON.stringify(data) if data is complex
         const buttonId = `custom-btn-msg${messageId}-idx${localButtonIndex++}`;
 
-        const bcolor = context.PSM['bcolor'] ?? 'transparent';
-        const tcolor = context.PSM['tcolor'] ?? 'white';
+        const bcolor = context.PSM.args['bcolor'] ?? 'transparent';
+        const tcolor = context.PSM.args['tcolor'] ?? 'white';
 
         return context.output !== '' ? `<button id="${buttonId}"
                         class="action-button"

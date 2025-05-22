@@ -98,13 +98,13 @@ function makeEditable($displayElement, $inputElement, objToUpdate, valueProperty
 
 
 function getGroupHeader(groupKey, groupData, obj = {}) {
-    const displayName = PS.escapeHTML(groupData.name || groupKey);
+    const displayName = PS.escapeHTML(groupData.args.name || groupKey);
     let iconClass = 'down fa-circle-chevron-down';
-    const initiallyExpanded = groupData.expanded !== undefined ? groupData.expanded : true;
+    const initiallyExpanded = groupData.args.expanded !== undefined ? groupData.args.expanded : true;
     if (!initiallyExpanded) {
         iconClass = 'right fa-circle-chevron-right';
     }
-    var fcolor = obj.vtcolor || '#eee';
+    var fcolor = obj.args.vtcolor || '#eee';
     var html = `<div class="inline-drawer-toggle inline-drawer-header stv-group-header" style="display: flex; justify-content: space-between; align-items: center; height: 30px; padding: 4px 12px; background-color: #383838; cursor: pointer; border-bottom: 1px solid #222; color: ${fcolor}; box-sizing: border-box;">
 		<b style="font-size: 1.05em;">${displayName}</b>
 		<div class="inline-drawer-icon fa-solid interactable ${iconClass}" tabindex="0" style="font-size: 1.1em;"></div>
@@ -123,7 +123,7 @@ function getGroupBody(objData, currentPath, onValueUpdateCallback) {
         if (typeof value !== 'object' || value === null) {
             return { key, value, priority, isGroup: false, isInvalid: true };
         }
-        priority = value.priority ?? PS.DEFAULT_PRIORITY;
+        priority = value.args.priority ?? PS.DEFAULT_PRIORITY;
         const isGroup = value.__PSTYPE__ === 'o';
         return { key, value, priority, isGroup, isInvalid: false };
     }).filter(item => !item.isInvalid);
@@ -175,8 +175,8 @@ function getGroupEntry(key, objGroupData, currentPathToGroup, onValueUpdateCallb
 
 function getStringEntry(key, obj, itemPathToObject, onValueUpdateCallback) {
     var entryIdBase = 'stv-str-' + PS.generateRandomId();
-    var font = obj.font || null;
-    const labelText = obj.name || key;
+    var font = obj.args.font || null;
+    const labelText = obj.args.name || key;
 
     var $entry = createEntryDiv(font);
     $entry.addClass('string-entry');
@@ -198,9 +198,9 @@ function getStringEntry(key, obj, itemPathToObject, onValueUpdateCallback) {
 function updateBarDisplay($displayWrapper, value, obj) {
     // obj is the item { style: 'b', val: ..., min: ..., max: ..., color: ... }
     // value is the current obj.val
-    const min = obj.min !== undefined ? parseFloat(obj.min) : PS.DEFAULT_MIN_VALUE;
-    const max = obj.max !== undefined ? parseFloat(obj.max) : PS.DEFAULT_MAX_VALUE;
-    const barColor = obj.barcolor || '#4CAF50';
+    const min = obj.args.min !== undefined ? parseFloat(obj.args.min) : PS.DEFAULT_MIN_VALUE;
+    const max = obj.args.max !== undefined ? parseFloat(obj.args.max) : PS.DEFAULT_MAX_VALUE;
+    const barColor = obj.args.barcolor || '#4CAF50';
     const percentage = Math.max(0, Math.min(100, ((parseFloat(value) - min) / (max - min)) * 100));
 
     $displayWrapper.empty(); // Clear previous bar
@@ -220,15 +220,15 @@ function updateBarDisplay($displayWrapper, value, obj) {
 
 
 function getNumberEntry(key, obj, itemPathToObject, onValueUpdateCallback) {
-    var min = obj.min !== undefined ? parseFloat(obj.min) : PS.DEFAULT_MIN_VALUE;
-    var max = obj.max !== undefined ? parseFloat(obj.max) : PS.DEFAULT_MAX_VALUE;
-    var step = obj.step !== undefined ? parseFloat(obj.step) : ((max - min) <= 20 && Number.isInteger(min) && Number.isInteger(max) ? 1 : (max - min) / 100);
-    var font = obj.font || null;
-    var fcolor = obj.vcolor || obj.tcolor || '#eee';
-    const labelText = obj.name || key;
+    var min = obj.args.min !== undefined ? parseFloat(obj.args.min) : PS.DEFAULT_MIN_VALUE;
+    var max = obj.args.max !== undefined ? parseFloat(obj.args.max) : PS.DEFAULT_MAX_VALUE;
+    var step = obj.args.step !== undefined ? parseFloat(obj.args.step) : ((max - min) <= 20 && Number.isInteger(min) && Number.isInteger(max) ? 1 : (max - min) / 100);
+    var font = obj.args.font || null;
+    var fcolor = obj.args.vcolor || obj.args.tcolor || '#eee';
+    const labelText = obj.args.name || key;
 
     var $entry = createEntryDiv(font);
-    var style = (obj.style || 'n').trim();
+    var style = (obj.args.style || 'n').trim();
     var entryIdBase = 'stv-num-' + PS.generateRandomId();
     const inputBaseStyle = `font-weight: bold; text-align: center; height: 24px; box-sizing: border-box; padding: 0 8px; background-color: #1e1e1e; color: ${fcolor}; border: 1px solid #444; border-radius: 3px;`;
     const displayBaseStyle = `cursor: pointer; font-weight: bold; text-align: center; padding: 0 8px; color: ${fcolor};`;
@@ -355,8 +355,8 @@ function getPSWindow(objectName, obj) {
     // **MODIFICATION FOR TITLE START AND GENERATION OF ID**
     let windowTitle = PS.escapeHTML(objectName); // Default title
     var windowId = 'PSWin-' + windowTitle;
-    if (obj && typeof obj.name === 'string') {
-        windowTitle = PS.escapeHTML(obj.name);
+    if (obj && typeof obj.args.name === 'string') {
+        windowTitle = PS.escapeHTML(obj.args.name);
     }
     // **MODIFICATION FOR TITLE END**
 

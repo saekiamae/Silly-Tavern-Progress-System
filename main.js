@@ -29,12 +29,12 @@ PS.simplifyState = (state, parent) => {
 
 PS.fillProcessStructures = (contextList, contextDict, modsList)=>{
     for (let local of contextList){
-        contextDict[local.PSM.ID] = local;
+        contextDict[local.PSM.args.id] = local;
         modsList.push({
-            ID: local.PSM.ID,
+            ID: local.PSM.args.id,
             Output: local.output,
-            Title: local.PSM.text,
-            Reason: local.PSM.reason
+            Title: local.PSM.args.text,
+            Reason: local.PSM.args.reason
         });
     }
 }

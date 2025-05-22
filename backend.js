@@ -14,6 +14,11 @@ PS.current = {
 
 
 
+//binding for tests
+PS.Sandbox = Sandbox;
+
+
+
 PS.onStateUpdate = [];
 
 
@@ -110,40 +115,54 @@ class UnsafeSandbox {
 
 
 PS.exec = (psm, globalScope = {}) => {
+    if (psm.data === undefined) psm.data = {};
     const localScope = {
         PSM: {
-            ID: psm.id ?? PS.generateRandomId(4),
-            bcolor: '#880088',
-            sID: function(value) {
-                this.ID = value;
+            args: {
+                id: psm.id ?? PS.generateRandomId(4),
+                bcolor: '#880088',
+            },
+            data: psm.data,
+            id: function(value) {
+                this.args.id = value;
                 return this;
             },
-            stext: function(value) {
-                this.text = value;
+            text: function(value) {
+                this.args.text = value;
                 return this;
             },
-            sreason: function(value) {
-                this.reason = value;
+            reason: function(value) {
+                this.args.reason = value;
                 return this;
             },
-            sbcolor: function(value) {
-                this.bcolor = value;
+            bcolor: function(value) {
+                this.args.bcolor = value;
                 return this;
             },
-            stcolor: function(value) {
-                this.tcolor = value;
+            tcolor: function(value) {
+                this.args.tcolor = value;
                 return this;
             },
-            sfont: function(value) {
-                this.font = value;
+            font: function(value) {
+                this.args.font = value;
                 return this;
             }
         },
         PSO: (name = '') => {
             return {
                 __PSTYPE__: 'o',
+                args: {
+                    name: name,
+                },
                 opened: false,
-                name: name,
+                name: function(value) {
+                    this.args.name = value;
+                    return this;
+                },
+                priority: function(value) {
+                    this.args.priority = value;
+                    return this;
+                },
                 open: function() {
                     this.opened = true;
                     return this;
@@ -157,33 +176,39 @@ PS.exec = (psm, globalScope = {}) => {
         PSV: (initValue, name) => {
             return {
                 __PSTYPE__: 'v',
+                args: {
+                    name: name,
+                    min: PS.DEFAULT_MIN_VALUE,
+                    max: PS.DEFAULT_MAX_VALUE,
+                    style: 'n',
+                },
                 val: initValue,
-                name: name,
-                min: PS.DEFAULT_MIN_VALUE,
-                max: PS.DEFAULT_MAX_VALUE,
-                style: 'n',
-                sstyle: function(value) {
-                    this.style = value;
+                name: function(value) {
+                    this.args.name = value;
                     return this;
                 },
-                sbarcolor: function(value) {
-                    this.barcolor = value;
+                priority: function(value) {
+                    this.args.priority = value;
                     return this;
                 },
-                smin: function(value) {
-                    this.min = value;
+                style: function(value) {
+                    this.args.style = value;
                     return this;
                 },
-                sname: function(value) {
-                    this.name = value;
+                tcolor: function(value) {
+                    this.args.tcolor = value;
                     return this;
                 },
-                smax: function(value) {
-                    this.max = value;
+                barcolor: function(value) {
+                    this.args.barcolor = value;
                     return this;
                 },
-                sval: function(newValue) {
-                    this.val = newValue;
+                min: function(value) {
+                    this.args.min = value;
+                    return this;
+                },
+                max: function(value) {
+                    this.args.max = value;
                     return this;
                 },
                 set: function(newValue) {
@@ -210,17 +235,18 @@ PS.exec = (psm, globalScope = {}) => {
                     return this.val;
                 }
             };
-        },
-        STS: (command) => {
-            return SillyTavern.getContext().executeSlashCommands(command);
         }
     };
-    if (PS.safe < 2) localScope.ST = PS.getSTObject();
+
+    const globals = {...Sandbox.SAFE_GLOBALS, console};
+    const prototypeWhitelist = new Map(Sandbox.SAFE_PROTOTYPES);
+
+    if (PS.safe < 2) localScope.ST = PS.getST(prototypeWhitelist);
     const code = psm.code;
     let output = '';
     if (PS.safe){
         //safe but slow execution
-        const sandbox = new Sandbox();
+        const sandbox = new Sandbox({globals, prototypeWhitelist});
         try{
             const exec = sandbox.compile(code);
             const result  = exec(globalScope, localScope).run();
@@ -244,7 +270,7 @@ PS.exec = (psm, globalScope = {}) => {
             output = '{ERROR}';
         }
     }
-    psm.id = localScope.PSM.ID;
+    psm.id = localScope.PSM.args.id;
     localScope.psm_raw = psm;
     localScope.output = output;
     return localScope;
@@ -252,7 +278,7 @@ PS.exec = (psm, globalScope = {}) => {
 
 
 
-PS.getSTObject = () => {
+PS.getST= (prototypeWhitelist = new Map()) => {
     const ctx = SillyTavern.getContext();
 
     const obj = {};
@@ -261,30 +287,51 @@ PS.getSTObject = () => {
 
     for (const com of Object.values(commands)) {
         function f (...args) {
-            return com.callback(f.args, ...args);
+            let output = '';
+            try {
+                output = com.callback(f.args, ...args);
+            }
+            catch(error){
+                console.error("ST command '" + com.name + "' execution failed:", error);
+            }
+            f.args = {...f.default};
+            return output;
         }
         const kwargs = {};
+        const allowed =  new Set();
         for (let kwarg of com.namedArgumentList){
             kwargs[kwarg.name] = kwarg.defaultValue;
             const setter = (value) => {
-                kwargs[kwarg.name] = value;
+                f.args[kwarg.name] = value;
                 return f;
             }
-            try {
-                f[kwarg.name] = setter;
-            }
-            catch(err) {
-                if (err instanceof TypeError) {
-                    f['_' + kwarg.name] = kwarg;
+            for (let name of [kwarg.name, ...(kwarg.aliases ?? [])]){
+                try {
+                    f[name] = setter;
+                    allowed.add(name);
                 }
-                else{
-                    console.error("Failed to generate slash command " + com.name + "for kwarg: " + kwarg.name);
+                catch(err) {
+                    if (err instanceof TypeError) {
+                        f['_' + name] = setter;
+                        allowed.add('_' + name);
+                    }
+                    else{
+                        console.error("Failed to generate slash command '" + com.name + "' for kwarg: " + name);
+                    }
                 }
             }
 
         }
-        f.args = kwargs;
+        //sandbox requirement
+        prototypeWhitelist.set(f, allowed);
+
+        //bind objects to our function
+        f.default = kwargs;
+        f.args = {...kwargs};
         obj[com.name] = f;
+        for (const alias of com.aliases) {
+            obj[alias] = f;
+        }
     }
 
     obj.S = (text) => ctx.executeSlashCommands(text);
@@ -318,7 +365,8 @@ PS.addChatPS = (jsText, msgID=-1) => {
     const psl = PS.getChatPS(true, msgID);
     if (!psl) return;
     const psm = {
-        code: jsText
+        code: jsText,
+        data: {}
     }
     psl.push(psm);
     return psm;
@@ -411,22 +459,3 @@ PS.state = (chatIdx = -1, withOptions=false) => {
     return globalScope;
 };
 
-
-
-PS.test = ()=>{
-
-    const sandbox = new Sandbox();
-    const scope = {
-        a: 15
-    }
-    const scopeB = {
-        a: 5,
-        c:4
-    }
-    const code = "b = () => {console.log('TestVFG', a);}; console.log('TestXXX');";
-    const exec = sandbox.compile(code);
-    exec(scope, scopeB).run();
-    console.log("RT");
-    scope.b();
-    return [scope, scopeB];
-}
