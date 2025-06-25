@@ -8,3 +8,7 @@ Plans:
 Currently testing approaches and possibilities for the powerful Novel Mode feature.
 
 Once Novel Mode is finished, official documentation will be released and patches for official alpha-release
+
+UPDATE:
+
+Silly Tavern iterface felt too limiting for confortable implementation of the Novel Mode, also my changes would be too drastic to the entire Silly Tavern project. Therefore I began writing my own standalone project. Will include link to it once it becomes a working prototype. 
